@@ -1,0 +1,723 @@
+﻿{
+  "paragraphs": [
+    {
+      "text": "%md\n# Load Taxi Trips Data from S3 bucket into Kinesis stream.\n",
+      "user": "anonymous",
+      "dateUpdated": "2021-12-17T16:59:51+0000",
+      "progress": 0,
+      "config": {
+        "tableHide": false,
+        "editorSetting": {
+          "language": "markdown",
+          "editOnDblClick": true,
+          "completionKey": "TAB",
+          "completionSupport": false
+        },
+        "colWidth": 12,
+        "editorMode": "ace/mode/markdown",
+        "fontSize": 9,
+        "editorHide": true,
+        "title": false,
+        "results": {},
+        "enabled": true
+      },
+      "settings": {
+        "params": {},
+        "forms": {}
+      },
+      "results": {
+        "code": "SUCCESS",
+        "msg": [
+          {
+            "type": "HTML",
+            "data": "<div class=\"markdown-body\">\n<h1>Load Taxi Trips Data from S3 bucket into Kinesis stream.</h1>\n\n</div>"
+          }
+        ]
+      },
+      "apps": [],
+      "runtimeInfos": {},
+      "progressUpdateIntervalMs": 500,
+      "jobName": "paragraph_1639760391761_1855065507",
+      "id": "paragraph_1635178570790_1007548628",
+      "dateCreated": "2021-12-17T16:59:51+0000",
+      "status": "READY",
+      "focus": true,
+      "$$hashKey": "object:172"
+    },
+    {
+      "text": "%md\n### Create an in-memory table for incoming data from S3 bucket\n#### If you have not uploaded the Taxi trips data file to s3 bucket, please do that before executing the next step.\n\n\n## IMPORTANT ⚠️ Make sure to update the 'path' variable to point to the file in the s3 bucket\n(Can be found in Outputs Section of CloudFormation Template)\nexample: `s3://nyctaxitripsbucket***/taxi-trips.csv`",
+      "user": "anonymous",
+      "dateUpdated": "2021-12-17T17:26:51+0000",
+      "progress": 0,
+      "config": {
+        "tableHide": false,
+        "editorSetting": {
+          "language": "markdown",
+          "editOnDblClick": true,
+          "completionKey": "TAB",
+          "completionSupport": false
+        },
+        "colWidth": 12,
+        "editorMode": "ace/mode/markdown",
+        "fontSize": 9,
+        "editorHide": true,
+        "results": {},
+        "enabled": true
+      },
+      "settings": {
+        "params": {},
+        "forms": {}
+      },
+      "results": {
+        "code": "SUCCESS",
+        "msg": [
+          {
+            "type": "HTML",
+            "data": "<div class=\"markdown-body\">\n<h3>Create an in-memory table for incoming data from S3 bucket</h3>\n<h4>If you have not uploaded the Taxi trips data file to s3 bucket, please do that before executing the next step.</h4>\n<h2>IMPORTANT ⚠️ Make sure to update the &lsquo;path&rsquo; variable to point to the file in the s3 bucket</h2>\n<p>(Can be found in Outputs Section of CloudFormation Template)<br />\nexample: <code>s3://nyctaxitripsbucket***/taxi-trips.csv</code></p>\n\n</div>"
+          }
+        ]
+      },
+      "apps": [],
+      "runtimeInfos": {},
+      "progressUpdateIntervalMs": 500,
+      "jobName": "paragraph_1639760391766_1680813706",
+      "id": "paragraph_1635179151539_1526013055",
+      "dateCreated": "2021-12-17T16:59:51+0000",
+      "status": "FINISHED",
+      "$$hashKey": "object:173",
+      "dateFinished": "2021-12-17T17:26:51+0000",
+      "dateStarted": "2021-12-17T17:26:51+0000"
+    },
+    {
+      "text": "\n%flink.ssql(type=update)\nDROP TABLE IF EXISTS nyc_yellow_taxi_trip_data;\n\nCREATE TABLE nyc_yellow_taxi_trip_data(\nid VARCHAR,\nvendor_id VARCHAR,\npickup_datetime VARCHAR,\ndropoff_datetime VARCHAR,\npassenger_count VARCHAR,\npickup_longtitude VARCHAR,\ndropoff_longtitude VARCHAR,\npickup_latitude VARCHAR,\ndropoff_latitude VARCHAR,\nstore_and_fwd_flag VARCHAR(1),\ngc_distance VARCHAR,\ntrip_duration VARCHAR,\ngoogle_distance VARCHAR,\ngoogle_duration VARCHAR\n)\nWITH (\n'connector' = 'filesystem',\n'path' = 's3://<<UPDATE BUCKET NAME>>', \n'format' = 'csv'   \n)",
+      "user": "anonymous",
+      "dateUpdated": "2021-12-17T17:25:18+0000",
+      "progress": 0,
+      "config": {
+        "editorSetting": {
+          "language": "sql",
+          "editOnDblClick": false
+        },
+        "editorMode": "ace/mode/sql",
+        "colWidth": 12,
+        "editorHide": false,
+        "fontSize": 9,
+        "results": {},
+        "enabled": true
+      },
+      "settings": {
+        "params": {},
+        "forms": {}
+      },
+      "apps": [],
+      "runtimeInfos": {},
+      "progressUpdateIntervalMs": 500,
+      "jobName": "paragraph_1639760391766_242362029",
+      "id": "20210927-204917_109452264",
+      "dateCreated": "2021-12-17T16:59:51+0000",
+      "status": "FINISHED",
+      "$$hashKey": "object:174",
+      "dateFinished": "2021-12-17T17:25:22+0000",
+      "dateStarted": "2021-12-17T17:25:19+0000"
+    },
+    {
+      "text": "%md\n### Query data from S3 ",
+      "user": "anonymous",
+      "dateUpdated": "2021-12-17T16:59:51+0000",
+      "progress": 0,
+      "config": {
+        "tableHide": false,
+        "editorSetting": {
+          "language": "markdown",
+          "editOnDblClick": true,
+          "completionKey": "TAB",
+          "completionSupport": false
+        },
+        "colWidth": 12,
+        "editorMode": "ace/mode/markdown",
+        "fontSize": 9,
+        "editorHide": true,
+        "results": {},
+        "enabled": true
+      },
+      "settings": {
+        "params": {},
+        "forms": {}
+      },
+      "results": {
+        "code": "SUCCESS",
+        "msg": [
+          {
+            "type": "HTML",
+            "data": "<div class=\"markdown-body\">\n<h3>Query data from S3</h3>\n\n</div>"
+          }
+        ]
+      },
+      "apps": [],
+      "runtimeInfos": {},
+      "progressUpdateIntervalMs": 500,
+      "jobName": "paragraph_1639760391766_59152673",
+      "id": "paragraph_1635180950261_202721316",
+      "dateCreated": "2021-12-17T16:59:51+0000",
+      "status": "READY",
+      "$$hashKey": "object:175"
+    },
+    {
+      "text": "%flink.ssql(type=update)\nselect * from nyc_yellow_taxi_trip_data",
+      "user": "anonymous",
+      "dateUpdated": "2021-12-17T17:07:08+0000",
+      "progress": 0,
+      "config": {
+        "editorSetting": {
+          "language": "sql",
+          "editOnDblClick": false,
+          "completionKey": "TAB",
+          "completionSupport": true
+        },
+        "colWidth": 12,
+        "editorMode": "ace/mode/sql",
+        "fontSize": 9,
+        "results": {
+          "0": {
+            "graph": {
+              "mode": "table",
+              "height": 300,
+              "optionOpen": false,
+              "setting": {
+                "table": {
+                  "tableGridState": {},
+                  "tableColumnTypeState": {
+                    "names": {
+                      "id": "string",
+                      "vendor_id": "string",
+                      "pickup_datetime": "string",
+                      "dropoff_datetime": "string",
+                      "passenger_count": "string",
+                      "pickup_longtitude": "string",
+                      "dropoff_longtitude": "string",
+                      "pickup_latitude": "string",
+                      "dropoff_latitude": "string",
+                      "store_and_fwd_flag": "string",
+                      "gc_distance": "string",
+                      "trip_duration": "string",
+                      "google_distance": "string",
+                      "google_duration": "string"
+                    },
+                    "updated": false
+                  },
+                  "tableOptionSpecHash": "[{\"name\":\"useFilter\",\"valueType\":\"boolean\",\"defaultValue\":false,\"widget\":\"checkbox\",\"description\":\"Enable filter for columns\"},{\"name\":\"showPagination\",\"valueType\":\"boolean\",\"defaultValue\":false,\"widget\":\"checkbox\",\"description\":\"Enable pagination for better navigation\"},{\"name\":\"showAggregationFooter\",\"valueType\":\"boolean\",\"defaultValue\":false,\"widget\":\"checkbox\",\"description\":\"Enable a footer for displaying aggregated values\"}]",
+                  "tableOptionValue": {
+                    "useFilter": false,
+                    "showPagination": false,
+                    "showAggregationFooter": false
+                  },
+                  "updated": false,
+                  "initialized": false
+                }
+              },
+              "commonSetting": {}
+            }
+          }
+        },
+        "enabled": true
+      },
+      "settings": {
+        "params": {},
+        "forms": {}
+      },
+      "apps": [],
+      "runtimeInfos": {},
+      "progressUpdateIntervalMs": 500,
+      "jobName": "paragraph_1639760391767_741841357",
+      "id": "paragraph_1634047812001_1781653448",
+      "dateCreated": "2021-12-17T16:59:51+0000",
+      "status": "ABORT",
+      "$$hashKey": "object:176",
+      "dateFinished": "2021-12-17T17:07:35+0000",
+      "dateStarted": "2021-12-17T17:07:08+0000"
+    },
+    {
+      "text": "%md\n### Create an in-memory table for target kinesis stream\n### Make sure 'stream' and 'region' are correct according to your resources for the workshop",
+      "user": "anonymous",
+      "dateUpdated": "2021-12-17T17:27:24+0000",
+      "progress": 0,
+      "config": {
+        "tableHide": false,
+        "editorSetting": {
+          "language": "markdown",
+          "editOnDblClick": true,
+          "completionKey": "TAB",
+          "completionSupport": false
+        },
+        "colWidth": 12,
+        "editorMode": "ace/mode/markdown",
+        "fontSize": 9,
+        "editorHide": true,
+        "results": {},
+        "enabled": true
+      },
+      "settings": {
+        "params": {},
+        "forms": {}
+      },
+      "results": {
+        "code": "SUCCESS",
+        "msg": [
+          {
+            "type": "HTML",
+            "data": "<div class=\"markdown-body\">\n<h3>Create an in-memory table for target kinesis stream</h3>\n<h3>Make sure &lsquo;stream&rsquo; and &lsquo;region&rsquo; are correct according to your resources for the workshop</h3>\n\n</div>"
+          }
+        ]
+      },
+      "apps": [],
+      "runtimeInfos": {},
+      "progressUpdateIntervalMs": 500,
+      "jobName": "paragraph_1639760391767_1839701859",
+      "id": "paragraph_1635182695189_395315080",
+      "dateCreated": "2021-12-17T16:59:51+0000",
+      "status": "FINISHED",
+      "$$hashKey": "object:177",
+      "dateFinished": "2021-12-17T17:27:24+0000",
+      "dateStarted": "2021-12-17T17:27:24+0000"
+    },
+    {
+      "text": "\n%flink.ssql(type=update)\nDROP TABLE IF EXISTS nyc_yellow_taxi_trip_data_stream;\nCREATE TABLE nyc_yellow_taxi_trip_data_stream (\nid VARCHAR,\nvendorId VARCHAR,\npickupDate VARCHAR,\ndropoffDate VARCHAR,\npassengerCount VARCHAR,\npickupLongitude VARCHAR,\ndropoffLongitude VARCHAR,\npickupLatitude VARCHAR,\ndropoffLatitude VARCHAR,\nstoreAndFwdFlag VARCHAR(1),\ngcDistance VARCHAR,\ntripDuration VARCHAR,\ngoogleDistance VARCHAR,\ngoogleDuration VARCHAR\n)\nWITH (\n'connector' = 'kinesis',\n'stream' = 'input-stream',\n'aws.region' = 'us-east-1',\n'scan.stream.initpos' = 'TRIM_HORIZON',\n'format' = 'json');\n\n",
+      "user": "anonymous",
+      "dateUpdated": "2021-12-17T16:59:51+0000",
+      "progress": 0,
+      "config": {
+        "editorSetting": {
+          "language": "sql",
+          "editOnDblClick": false
+        },
+        "editorMode": "ace/mode/sql",
+        "colWidth": 12,
+        "editorHide": false,
+        "fontSize": 9,
+        "results": {},
+        "enabled": true
+      },
+      "settings": {
+        "params": {},
+        "forms": {}
+      },
+      "apps": [],
+      "runtimeInfos": {},
+      "progressUpdateIntervalMs": 500,
+      "jobName": "paragraph_1639760391767_953905940",
+      "id": "20210927-204917_1358489243",
+      "dateCreated": "2021-12-17T16:59:51+0000",
+      "status": "READY",
+      "$$hashKey": "object:178"
+    },
+    {
+      "text": "%md \n### Start data insertion from S3 into Kinesis Stream using in-memory tables",
+      "user": "anonymous",
+      "dateUpdated": "2021-12-17T16:59:51+0000",
+      "progress": 0,
+      "config": {
+        "tableHide": false,
+        "editorSetting": {
+          "language": "markdown",
+          "editOnDblClick": true,
+          "completionKey": "TAB",
+          "completionSupport": false
+        },
+        "colWidth": 12,
+        "editorMode": "ace/mode/markdown",
+        "fontSize": 9,
+        "editorHide": true,
+        "results": {},
+        "enabled": true
+      },
+      "settings": {
+        "params": {},
+        "forms": {}
+      },
+      "results": {
+        "code": "SUCCESS",
+        "msg": [
+          {
+            "type": "HTML",
+            "data": "<div class=\"markdown-body\">\n<h3>Start data insertion from S3 into Kinesis Stream using in-memory tables</h3>\n\n</div>"
+          }
+        ]
+      },
+      "apps": [],
+      "runtimeInfos": {},
+      "progressUpdateIntervalMs": 500,
+      "jobName": "paragraph_1639760391767_1616842364",
+      "id": "paragraph_1635185100184_997847668",
+      "dateCreated": "2021-12-17T16:59:51+0000",
+      "status": "READY",
+      "$$hashKey": "object:179"
+    },
+    {
+      "text": "%flink.ssql(type=update)\nINSERT INTO nyc_yellow_taxi_trip_data_stream\nSELECT id,\nvendor_id as vendorId,\npickup_datetime as pickupDate,\ndropoff_datetime as dropoffDate,\npassenger_count as passengerCount,\npickup_longtitude as pickupLongitude,\ndropoff_longtitude as dropoffLongitude,\npickup_latitude as pickupLatitude,\ndropoff_latitude as dropoffLatitude,\nstore_and_fwd_flag as storeAndFwdFlag,\ngc_distance as gcDistance,\ntrip_duration as tripDuration,\ngoogle_distance as googleDistance,\ngoogle_duration as googleDuration\nFROM nyc_yellow_taxi_trip_data\n",
+      "user": "anonymous",
+      "dateUpdated": "2021-12-17T16:59:51+0000",
+      "progress": 0,
+      "config": {
+        "editorSetting": {
+          "language": "sql",
+          "editOnDblClick": false,
+          "completionKey": "TAB",
+          "completionSupport": true
+        },
+        "colWidth": 12,
+        "editorMode": "ace/mode/sql",
+        "fontSize": 9,
+        "results": {},
+        "enabled": true
+      },
+      "settings": {
+        "params": {},
+        "forms": {}
+      },
+      "apps": [],
+      "runtimeInfos": {},
+      "progressUpdateIntervalMs": 500,
+      "jobName": "paragraph_1639760391767_449138384",
+      "id": "paragraph_1634930281711_869899494",
+      "dateCreated": "2021-12-17T16:59:51+0000",
+      "status": "READY",
+      "$$hashKey": "object:180"
+    },
+    {
+      "text": "%md\n### Query Kinesis stream target table to check data is inserted correctly.\n",
+      "user": "anonymous",
+      "dateUpdated": "2021-12-17T16:59:51+0000",
+      "progress": 0,
+      "config": {
+        "tableHide": false,
+        "editorSetting": {
+          "language": "markdown",
+          "editOnDblClick": true,
+          "completionKey": "TAB",
+          "completionSupport": false
+        },
+        "colWidth": 12,
+        "editorMode": "ace/mode/markdown",
+        "fontSize": 9,
+        "editorHide": true,
+        "results": {},
+        "enabled": true
+      },
+      "settings": {
+        "params": {},
+        "forms": {}
+      },
+      "results": {
+        "code": "SUCCESS",
+        "msg": [
+          {
+            "type": "HTML",
+            "data": "<div class=\"markdown-body\">\n<h3>Query Kinesis stream target table to check data is inserted correctly.</h3>\n\n</div>"
+          }
+        ]
+      },
+      "apps": [],
+      "runtimeInfos": {},
+      "progressUpdateIntervalMs": 500,
+      "jobName": "paragraph_1639760391767_1960513657",
+      "id": "paragraph_1634937171440_1408118299",
+      "dateCreated": "2021-12-17T16:59:51+0000",
+      "status": "READY",
+      "$$hashKey": "object:181"
+    },
+    {
+      "text": "%flink.ssql(type=update)\nselect * from nyc_yellow_taxi_trip_data_stream\n",
+      "user": "anonymous",
+      "dateUpdated": "2021-12-17T16:59:51+0000",
+      "progress": 0,
+      "config": {
+        "editorSetting": {
+          "language": "sql",
+          "editOnDblClick": false,
+          "completionKey": "TAB",
+          "completionSupport": true
+        },
+        "colWidth": 12,
+        "editorMode": "ace/mode/sql",
+        "fontSize": 9,
+        "results": {
+          "0": {
+            "graph": {
+              "mode": "table",
+              "height": 300,
+              "optionOpen": false,
+              "setting": {
+                "table": {
+                  "tableGridState": {},
+                  "tableColumnTypeState": {
+                    "names": {
+                      "id": "string",
+                      "vendor_id": "string",
+                      "pickup_datetime": "string",
+                      "dropoff_datetime": "string",
+                      "passenger_count": "string",
+                      "pickup_longtitude": "string",
+                      "dropoff_longtitude": "string",
+                      "pickup_latitude": "string",
+                      "dropoff_latitude": "string",
+                      "store_and_fwd_flag": "string",
+                      "gc_distance": "string",
+                      "trip_duration": "string",
+                      "google_distance": "string",
+                      "google_duration": "string"
+                    },
+                    "updated": false
+                  },
+                  "tableOptionSpecHash": "[{\"name\":\"useFilter\",\"valueType\":\"boolean\",\"defaultValue\":false,\"widget\":\"checkbox\",\"description\":\"Enable filter for columns\"},{\"name\":\"showPagination\",\"valueType\":\"boolean\",\"defaultValue\":false,\"widget\":\"checkbox\",\"description\":\"Enable pagination for better navigation\"},{\"name\":\"showAggregationFooter\",\"valueType\":\"boolean\",\"defaultValue\":false,\"widget\":\"checkbox\",\"description\":\"Enable a footer for displaying aggregated values\"}]",
+                  "tableOptionValue": {
+                    "useFilter": false,
+                    "showPagination": false,
+                    "showAggregationFooter": false
+                  },
+                  "updated": false,
+                  "initialized": false
+                },
+                "lineChart": {
+                  "rotate": {
+                    "degree": "-45"
+                  },
+                  "xLabelStatus": "default"
+                }
+              },
+              "commonSetting": {},
+              "keys": [
+                {
+                  "name": "id",
+                  "index": 0,
+                  "aggr": "sum"
+                }
+              ],
+              "groups": [],
+              "values": [
+                {
+                  "name": "vendor_id",
+                  "index": 1,
+                  "aggr": "sum"
+                }
+              ]
+            },
+            "helium": {}
+          },
+          "2": {
+            "graph": {
+              "mode": "table",
+              "height": 300,
+              "optionOpen": false,
+              "setting": {
+                "table": {
+                  "tableGridState": {},
+                  "tableColumnTypeState": {
+                    "names": {
+                      "id": "string",
+                      "vendorId": "string",
+                      "pickupDatetime": "string",
+                      "dropoffDatetime": "string",
+                      "passengerCount": "string",
+                      "pickupLongitude": "string",
+                      "dropoffLongitude": "string",
+                      "pickupLatitude": "string",
+                      "dropoffLatitude": "string",
+                      "storeAndFwdFlag": "string",
+                      "gcDistance": "string",
+                      "tripDuration": "string",
+                      "googleDistance": "string",
+                      "googleDuration": "string"
+                    },
+                    "updated": false
+                  },
+                  "tableOptionSpecHash": "[{\"name\":\"useFilter\",\"valueType\":\"boolean\",\"defaultValue\":false,\"widget\":\"checkbox\",\"description\":\"Enable filter for columns\"},{\"name\":\"showPagination\",\"valueType\":\"boolean\",\"defaultValue\":false,\"widget\":\"checkbox\",\"description\":\"Enable pagination for better navigation\"},{\"name\":\"showAggregationFooter\",\"valueType\":\"boolean\",\"defaultValue\":false,\"widget\":\"checkbox\",\"description\":\"Enable a footer for displaying aggregated values\"}]",
+                  "tableOptionValue": {
+                    "useFilter": false,
+                    "showPagination": false,
+                    "showAggregationFooter": false
+                  },
+                  "updated": false,
+                  "initialized": false
+                }
+              },
+              "commonSetting": {}
+            }
+          }
+        },
+        "enabled": true
+      },
+      "settings": {
+        "params": {},
+        "forms": {}
+      },
+      "apps": [],
+      "runtimeInfos": {},
+      "progressUpdateIntervalMs": 500,
+      "jobName": "paragraph_1639760391767_699964622",
+      "id": "paragraph_1634930530825_788505808",
+      "dateCreated": "2021-12-17T16:59:51+0000",
+      "status": "READY",
+      "$$hashKey": "object:182"
+    },
+    {
+      "text": "%md\n### &#x23F8; &nbsp;   You can Stop the above paragraph when you have seen results.\n",
+      "user": "anonymous",
+      "dateUpdated": "2021-12-17T16:59:51+0000",
+      "progress": 0,
+      "config": {
+        "tableHide": false,
+        "editorSetting": {
+          "language": "markdown",
+          "editOnDblClick": true,
+          "completionKey": "TAB",
+          "completionSupport": false
+        },
+        "colWidth": 12,
+        "editorMode": "ace/mode/markdown",
+        "fontSize": 9,
+        "editorHide": true,
+        "results": {},
+        "enabled": true
+      },
+      "settings": {
+        "params": {},
+        "forms": {}
+      },
+      "results": {
+        "code": "SUCCESS",
+        "msg": [
+          {
+            "type": "HTML",
+            "data": "<div class=\"markdown-body\">\n<h3>⏸     You can Stop the above paragraph when you have seen results.</h3>\n\n</div>"
+          }
+        ]
+      },
+      "apps": [],
+      "runtimeInfos": {},
+      "progressUpdateIntervalMs": 500,
+      "jobName": "paragraph_1639760391768_1258658786",
+      "id": "paragraph_1635869726918_1729341763",
+      "dateCreated": "2021-12-17T16:59:51+0000",
+      "status": "READY",
+      "$$hashKey": "object:183"
+    },
+    {
+      "text": "%md\n### Steps to delete in-memory tables for cleanup purposes.",
+      "user": "anonymous",
+      "dateUpdated": "2021-12-17T16:59:51+0000",
+      "progress": 0,
+      "config": {
+        "tableHide": false,
+        "editorSetting": {
+          "language": "markdown",
+          "editOnDblClick": true,
+          "completionKey": "TAB",
+          "completionSupport": false
+        },
+        "colWidth": 12,
+        "editorMode": "ace/mode/markdown",
+        "fontSize": 9,
+        "editorHide": true,
+        "results": {},
+        "enabled": true
+      },
+      "settings": {
+        "params": {},
+        "forms": {}
+      },
+      "results": {
+        "code": "SUCCESS",
+        "msg": [
+          {
+            "type": "HTML",
+            "data": "<div class=\"markdown-body\">\n<h3>Steps to delete in-memory tables for cleanup purposes.</h3>\n\n</div>"
+          }
+        ]
+      },
+      "apps": [],
+      "runtimeInfos": {},
+      "progressUpdateIntervalMs": 500,
+      "jobName": "paragraph_1639760391768_1149435960",
+      "id": "paragraph_1635353295188_584084378",
+      "dateCreated": "2021-12-17T16:59:51+0000",
+      "status": "READY",
+      "$$hashKey": "object:184"
+    },
+    {
+      "text": "%flink.ssql(type=update)\ndrop table nyc_yellow_taxi_trip_data\n    ",
+      "user": "anonymous",
+      "dateUpdated": "2021-12-17T16:59:51+0000",
+      "progress": 0,
+      "config": {
+        "editorSetting": {
+          "language": "sql",
+          "editOnDblClick": false,
+          "completionKey": "TAB",
+          "completionSupport": true
+        },
+        "colWidth": 12,
+        "editorMode": "ace/mode/sql",
+        "fontSize": 9,
+        "results": {},
+        "enabled": true
+      },
+      "settings": {
+        "params": {},
+        "forms": {}
+      },
+      "apps": [],
+      "runtimeInfos": {},
+      "progressUpdateIntervalMs": 500,
+      "jobName": "paragraph_1639760391768_806387439",
+      "id": "paragraph_1635189331692_132066567",
+      "dateCreated": "2021-12-17T16:59:51+0000",
+      "status": "READY",
+      "$$hashKey": "object:185"
+    },
+    {
+      "text": "%flink.ssql(type=update)\ndrop table nyc_yellow_taxi_trip_data_stream",
+      "user": "anonymous",
+      "dateUpdated": "2021-12-17T16:59:51+0000",
+      "progress": 0,
+      "config": {
+        "editorSetting": {
+          "language": "sql",
+          "editOnDblClick": false,
+          "completionKey": "TAB",
+          "completionSupport": true
+        },
+        "colWidth": 12,
+        "editorMode": "ace/mode/sql",
+        "fontSize": 9,
+        "results": {},
+        "enabled": true
+      },
+      "settings": {
+        "params": {},
+        "forms": {}
+      },
+      "apps": [],
+      "runtimeInfos": {},
+      "progressUpdateIntervalMs": 500,
+      "jobName": "paragraph_1639760391768_1416485507",
+      "id": "paragraph_1635353367267_940205221",
+      "dateCreated": "2021-12-17T16:59:51+0000",
+      "status": "READY",
+      "$$hashKey": "object:186"
+    }
+  ],
+  "name": "Taxi Trips Data Loading from S3 to Kinesis-1",
+  "id": "2GQY7MC8Z",
+  "defaultInterpreterGroup": "flink",
+  "version": "0.9.0",
+  "noteParams": {},
+  "noteForms": {},
+  "angularObjects": {},
+  "config": {
+    "isZeppelinNotebookCronEnable": false,
+    "looknfeel": "default",
+    "personalizedMode": "false"
+  },
+  "info": {},
+  "path": "/Taxi Trips Data Loading from S3 to Kinesis-1"
+}
