@@ -1,0 +1,523 @@
+Transform: AWS::SecretsManager-2020-07-23
+
+Description: "Sample Module Team template"
+
+Parameters:
+  # Optional parameters passed by the Event Engine to the stack.
+  # EEEventId:
+  #   Description: "Unique ID of this Event"
+  #   Type: String
+  # EETeamId:
+  #   Description: "Unique ID of this Team"
+  #   Type: String
+  # EEModuleId:
+  #   Description: "Unique ID of this module"
+  #   Type: String
+  # EEModuleVersion:
+  #   Description: "Version of this module"
+  #   Type: String
+  # EEAssetsBucket:
+  #   Description: "Region-specific assets S3 bucket name (e.g. ee-assets-prod-us-east-1)"
+  #   Type: String
+  # EEAssetsKeyPrefix:
+  #   Description: "S3 key prefix where this modules assets are stored. (e.g. modules/my_module/v1/)"
+  #   Type: String
+  # EECentralAccountId:
+  #   Description: "AWS Account Id of the Central account"
+  #   Type: String
+  # EETeamRoleArn:
+  #   Description: "ARN of the Team Role"
+  #   Type: String
+  # EEKeyPair:
+  #   Description: "Name of the EC2 KeyPair generated for the Team"
+  #   Type: AWS::EC2::KeyPair::KeyName
+  # Your own parameters for the stack. NOTE: All these parameters need to have a default value.
+  EEAssetsBucket:
+    Description: "Region-specific assets S3 bucket name (e.g. ee-assets-prod-us-east-1)"
+    Type: String
+    Default: "ee-assets-prod-us-east-1"
+  EEAssetsKeyPrefix:
+    Description: "S3 key prefix where this modules assets are stored. (e.g. modules/my_module/v1/)"
+    Type: String
+    Default: "modules/599e7c685a254c2b892cdbf58a7b3b4f/v1/"
+  KDADatabaseName:
+    Type: String
+    MinLength: "1"
+    Description: "Database Name for KDA Application."
+    Default: "kinesislab"
+  KDAKinesisStreamName:
+    Type: String
+    MinLength: "1"
+    Description: "Kinesis stream name for loading data."
+    Default: "input-stream"
+
+Mappings:
+  ConfigurationMap:
+    Cloud9:
+      CidrBlock: "10.43.0.0/28"
+
+Resources:
+#S3 Buckets
+  TaxiTripDataSet:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+    Properties:
+      BucketName:
+        !Sub
+          - 'nyctaxitrips-${AWS::AccountId}-${AWS::Region}-${RandomGUID}'
+          - { RandomGUID: !Select [0, !Split ["-", !Select [2, !Split ["/", !Ref AWS::StackId ]]]] }
+
+  CuratedDataSet:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+    Properties:
+      BucketName:
+        !Sub
+          - 'curateddata-${AWS::AccountId}-${AWS::Region}-${RandomGUID}'
+          - { RandomGUID: !Select [0, !Split ["-", !Select [2, !Split ["/", !Ref AWS::StackId ]]]] }
+
+#Cloud9 Needs to Access Internet
+  VPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: !FindInMap [ConfigurationMap, Cloud9, CidrBlock]
+      EnableDnsSupport: true
+      EnableDnsHostnames: true
+      Tags:
+        - Key: Name
+          Value: !Sub "${AWS::StackName}-VPC"
+  
+  InternetGateway:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: Name
+          Value: !Sub "${AWS::StackName}-InternetGateway"
+
+  AttachGateway:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      VpcId: !Ref 'VPC'
+      InternetGatewayId: !Ref 'InternetGateway'
+
+  RouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref 'VPC'
+      Tags:
+        - Key: Name
+          Value: !Sub "${AWS::StackName}-RouteTable"
+
+  Route:
+    Type: AWS::EC2::Route
+    DependsOn: AttachGateway
+    Properties:
+      RouteTableId: !Ref 'RouteTable'
+      DestinationCidrBlock: '0.0.0.0/0'
+      GatewayId: !Ref 'InternetGateway'
+
+  PublicSubnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref 'VPC'
+      CidrBlock: !FindInMap [ConfigurationMap, Cloud9, CidrBlock]
+      AvailabilityZone: !Select
+        - '0'
+        - !GetAZs ''
+      Tags:
+        - Key: Name
+          Value: !Sub "${AWS::StackName}-PublicSubnet1"
+
+  PublicSubnet1RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PublicSubnet1
+      RouteTableId: !Ref RouteTable
+
+#Cloud9 Instance
+  Cloud9:
+    Type: AWS::Cloud9::EnvironmentEC2
+    Properties:
+      AutomaticStopTimeMinutes: 30
+      Description: Real Time Streaming with Amazon Kinesis Cloud9 IDE 
+      InstanceType: m5.large
+      Name: !Sub "KinesisRealTimeStreaming-${AWS::StackName}"
+      SubnetId: !Ref PublicSubnet1
+      ImageId: amazonlinux-2-x86_64
+
+#Glue database
+  Database:
+    Type: AWS::Glue::Database
+    Properties:
+      CatalogId: !Ref 'AWS::AccountId'
+      DatabaseInput:
+        Name: !Ref KDADatabaseName
+        Description: Database for KDA Application Source and Target Tables
+
+#Kinesis Analytics Role
+  KinesisAnalyticsRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub 'Kinesis-analytics-KDA-${AWS::StackName}'
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - kinesisanalytics.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Policies:
+        - PolicyName: !Sub 'Kinesis-analytics-KDA-${AWS::StackName}'
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Sid: ReadOnlySid
+                Effect: Allow
+                Action:
+                  - ec2:DescribeVpcs
+                  - ec2:DescribeDhcpOptions
+                  - ec2:DescribeSubnets
+                  - ec2:DescribeSecurityGroups
+                Resource:
+                  - "*"
+              - Sid: LogGroupSid
+                Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                  - logs:AssociateKmsKey
+                Resource:
+                  - arn:aws:logs:*:*:/aws-glue/*
+                  - arn:aws:logs:*:*:log-group/aws/kinesis-analytics/*
+              - Sid: GlueTableSid
+                Effect: Allow
+                Action:
+                  - glue:GetConnection
+                  - glue:GetTable
+                  - glue:GetTables
+                  - glue:CreateTable
+                  - glue:UpdateTable
+                  - glue:GetUserDefinedFunction
+                  - glue:GetPartitions
+                  - glue:DeleteTable
+                  - glue:GetDatabase
+                  - glue:GetDatabases
+                  - glue:GetUserDefinedFunction
+                Resource: 
+                  - "*"
+              - Sid: KinesisEfoConsumer
+                Effect: Allow
+                Action:
+                  - kinesis:DescribeStreamConsumer
+                  - kinesis:SubscribeToShard
+                Resource:
+                  - !Sub 'arn:aws:kinesis:${AWS::Region}:${AWS::AccountId}:stream/${KDAKinesisStreamName}/consumer/*'
+                  - !Sub 'arn:aws:kinesis:${AWS::Region}:${AWS::AccountId}:stream/${KDAKinesisStreamName}/consumer/*'
+              - Sid: KinesisStreamSid
+                Effect: Allow
+                Action:
+                  - kinesis:GetShardIterator
+                  - kinesis:GetRecords
+                  - kinesis:PutRecords
+                  - kinesis:DescribeStream
+                  - kinesis:DescribeStreamSummary
+                  - kinesis:RegisterStreamConsumer
+                  - kinesis:DeregisterStreamConsumer
+                Resource:
+                  - !Sub 'arn:aws:kinesis:${AWS::Region}:${AWS::AccountId}:stream/${KDAKinesisStreamName}'
+              - Sid: KinesisStreamListShardsID
+                Effect: Allow
+                Action:
+                  - kinesis:*
+                Resource:
+                  - "*"
+              - Sid: S3DataAccessSid
+                Effect: Allow
+                Action:
+                  - s3:*
+                Resource:
+                  - !Sub 'arn:aws:s3:::${TaxiTripDataSet}'
+                  - !Sub 'arn:aws:s3:::${CuratedDataSet}'
+                  - !Sub 'arn:aws:s3:::${TaxiTripDataSet}/*'
+                  - !Sub 'arn:aws:s3:::${CuratedDataSet}/*'
+              - Sid: KinesisAnalyticsSid
+                Effect: Allow
+                Action:
+                  - kinesisanalytics:DescribeApplication
+                Resource:
+                  - !Sub "arn:aws:kinesisanalytics:${AWS::Region}:${AWS::AccountId}:application/KDA-studio-1-*"
+              - Sid: S3AssetsBucket
+                Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:GetObjectVersion
+                Resource:
+                  - !Sub 'arn:aws:s3:::${EEAssetsBucket}/'
+                  - !Sub 'arn:aws:s3:::${EEAssetsBucket}/*'
+
+#Kinesis Analytics Studio
+  KinesisAnalyticsStudio:
+    Type: AWS::KinesisAnalyticsV2::Application
+    Properties: 
+      ApplicationName: !Sub 'KDA-studio-1-${AWS::StackName}'
+      ApplicationDescription: Kinesis Flink Sql Demo
+      RuntimeEnvironment: ZEPPELIN-FLINK-2_0
+      ApplicationMode: INTERACTIVE
+      ServiceExecutionRole: !GetAtt 'KinesisAnalyticsRole.Arn'
+      ApplicationConfiguration:
+        FlinkApplicationConfiguration:
+          ParallelismConfiguration:
+            ConfigurationType: CUSTOM
+            Parallelism: 4
+            ParallelismPerKPU: 1
+        ZeppelinApplicationConfiguration:
+          CatalogConfiguration:
+            GlueDataCatalogConfiguration:
+              DatabaseARN: !Sub 'arn:aws:glue:${AWS::Region}:${AWS::AccountId}:database/${Database}'
+          CustomArtifactsConfiguration:
+            - ArtifactType: DEPENDENCY_JAR
+              MavenReference:
+                GroupId: org.apache.flink
+                ArtifactId: flink-sql-connector-kinesis_2.12
+                Version: 1.13.2
+            - ArtifactType: DEPENDENCY_JAR
+              MavenReference:
+                GroupId: org.apache.flink
+                ArtifactId: flink-connector-kafka_2.12
+                Version: 1.13.2
+            - ArtifactType: DEPENDENCY_JAR
+              MavenReference:
+                GroupId: software.amazon.msk
+                ArtifactId: aws-msk-iam-auth
+                Version: 1.1.0
+            - ArtifactType: DEPENDENCY_JAR
+              S3ContentLocation:
+                BucketARN: !Sub 'arn:aws:s3:::${EEAssetsBucket}'
+                FileKey: !Sub '${EEAssetsKeyPrefix}flink-sql-connector-elasticsearch7_2.11-1.13.2.jar'
+
+  LambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub 'KinesisLambdaConsumerRole-${AWS::StackName}'
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaKinesisExecutionRole
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaDynamoDBExecutionRole
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+              - lambda.amazonaws.com
+          Action:
+            - sts:AssumeRole
+      Path: "/"
+      Policies:
+        - PolicyName: LambdaFunctionPolicy
+          PolicyDocument:
+           Version: '2012-10-17'
+           Statement:
+           - Effect: Allow
+             Action:
+              - logs:CreateLogGroup
+             Resource: !Join [ ":" , ["arn:aws:logs",!Ref AWS::Region,!Ref AWS::AccountId,"*" ] ]
+           - Effect: Allow
+             Action:
+              - logs:CreateLogStream
+              - logs:PutLogEvents
+             Resource: !Join [ ":" , ["arn:aws:logs",!Ref AWS::Region,!Ref AWS::AccountId,"log-group:/aws/lambda/NYCTaxiTrips-DataTransformation-*:*" ] ]
+           - Effect: Allow
+             Action:
+              - dynamodb:PutItem
+              - dynamodb:UpdateItem
+              - dynamodb:UpdateTable
+             Resource: !Join [ ":" , ["arn:aws:dynamodb",!Ref AWS::Region,!Ref AWS::AccountId,"table/kinesisAggs" ] ]
+           - Effect: Allow
+             Action: 
+              - dynamodb:ListContributorInsights
+              - dynamodb:ListGlobalTables
+              - dynamodb:ListTables
+              - dynamodb:ListBackups
+              - dynamodb:ListExports
+             Resource: "*"
+#LambdaFunction
+  LambdaFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      Handler: "index.lambda_handler"
+      Role: !GetAtt LambdaRole.Arn
+      Runtime: "python3.9"
+      Timeout: 10
+      FunctionName: !Sub "NYCTaxiTrips-DataTransformation-${AWS::StackName}"
+      Code:
+        ZipFile: |
+          import base64
+          import json
+          print('Loading function')
+          def lambda_handler(event, context):
+              output = []
+              for record in event['records']:
+                  print(record['recordId'])
+                  payload = base64.b64decode(record['data']).decode('utf-8')
+                  reading =json.loads(payload)
+                  # Add additional column source
+                  reading['source'] ='NYCTAXI'
+                  # Do custom processing on the payload here
+                  output_record = {
+                      'recordId': record['recordId'],
+                      'result': 'Ok',
+                      #'data': base64.b64encode(payload.encode('utf-8')
+                      'data' : base64.b64encode(json.dumps(reading).encode('UTF-8'))
+                  }
+                  output.append(output_record)
+              print('Successfully processed {} records.'.format(len(event['records'])))
+              return {'records': output}
+
+#Custom Lambda Function
+  StartKDALambdaFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      Handler: "index.lambda_handler"
+      Role: !GetAtt StartKDALambdaRole.Arn
+      Runtime: "python3.9"
+      Timeout: 10
+      FunctionName: !Sub "StartKDA-${AWS::StackName}"
+      Code:
+        ZipFile: |
+          import os
+          import json
+          import boto3
+          import cfnresponse
+          client = boto3.client('kinesisanalyticsv2')     
+          def lambda_handler(event, context):
+              print(event)
+              responseData = {}
+              if event['RequestType'] == 'Delete':
+                cfnresponse.send(event, context, cfnresponse.SUCCESS, responseData, "CustomResourcePhysicalID")
+                return
+              application_name = event['ResourceProperties']['ApplicationName']
+              try:
+                  response = client.start_application(ApplicationName=application_name)
+                  print(response)
+                  responseValue = "Started the Application"
+                  responseData['Data'] = responseValue
+              except:
+                  responseValue = "Failed Starting the Application, Please start the application manually"
+                  responseData['Data'] = responseValue
+              cfnresponse.send(event, context, cfnresponse.SUCCESS, responseData, "CustomResourcePhysicalID")
+
+#Custom Lambda Role
+  StartKDALambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+              - lambda.amazonaws.com
+          Action:
+            - sts:AssumeRole
+      Path: "/"
+      Policies:
+        - PolicyName: LambdaFunctionPolicy
+          PolicyDocument:
+           Version: '2012-10-17'
+           Statement:
+           - Effect: Allow
+             Action:
+              - logs:CreateLogGroup
+             Resource: !Join [ ":" , ["arn:aws:logs",!Ref AWS::Region,!Ref AWS::AccountId,"*" ] ]
+           - Effect: Allow
+             Action:
+              - logs:CreateLogStream
+              - logs:PutLogEvents
+             Resource: !Join [ ":" , ["arn:aws:logs",!Ref AWS::Region,!Ref AWS::AccountId,"log-group:/aws/lambda/StartKDA-*:*" ] ]
+           - Effect: Allow
+             Action:
+              - kinesisanalytics:StartApplication
+             Resource: !Join [ ":" , ["arn:aws:kinesisanalytics",!Ref AWS::Region,!Ref AWS::AccountId,"application/KDA-studio-*" ] ]
+
+#Start KDA Application
+  StartKDA:
+    Type: "Custom::StartKDA"
+    Properties:
+      ServiceToken: !GetAtt StartKDALambdaFunction.Arn
+      ApplicationName: !Sub 'KDA-studio-1-${AWS::StackName}'
+    DependsOn: KinesisAnalyticsStudio
+
+#Admin password for OpenSearch Instance
+  OpenSearchPassword:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      GenerateSecretString:
+        SecretStringTemplate: '{"username": "admin"}'
+        GenerateStringKey: password
+        PasswordLength: 16
+        ExcludeCharacters: "\"@/\\"
+
+#OpenSearch Instance
+  OpenSearchInstance:
+    Type: AWS::OpenSearchService::Domain
+    Properties:
+      DomainName: "os-domain"
+      EngineVersion: 'OpenSearch_1.0'
+      ClusterConfig:
+        InstanceCount: 1
+        InstanceType: t3.medium.search
+      AccessPolicies:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: 'Allow'
+            Principal:
+              AWS: '*'
+            Action: 'es:*'
+            Resource: !Sub "arn:aws:es:${AWS::Region}:${AWS::AccountId}:domain/os-domain/*"
+      AdvancedSecurityOptions:
+        Enabled: true
+        InternalUserDatabaseEnabled: true
+        MasterUserOptions:
+          MasterUserName: !Sub "{{resolve:secretsmanager:${OpenSearchPassword}::username}}"
+          MasterUserPassword: !Sub "{{resolve:secretsmanager:${OpenSearchPassword}::password}}"
+      NodeToNodeEncryptionOptions:
+        Enabled: true
+      EncryptionAtRestOptions:
+        Enabled: true
+      DomainEndpointOptions:
+        EnforceHTTPS: true
+      EBSOptions:
+        EBSEnabled: true
+        VolumeSize: 10
+        VolumeType: gp2
+
+#Outputs will go here
+Outputs:
+  TaxiTripsS3Bucket:
+    Value: !Ref TaxiTripDataSet
+    Description: "Taxi Trip Data Set S3 Bucket"
+  CuratedS3Bucket:
+    Value: !Ref CuratedDataSet
+    Description: "Curated Data Set S3 Bucket"
+  Cloud9URL:
+    Description: Cloud9 Environment
+    Value:
+      Fn::Join:
+      - ''
+      - - !Sub https://${AWS::Region}.console.aws.amazon.com/cloud9/ide/
+        - !Ref 'Cloud9'
+  LambdaFunctionArn:
+    Description: Lambda Function ARN
+    Value: !GetAtt LambdaFunction.Arn
+  GlueDatabaseName:
+    Description: Name of the Glue Database
+    Value: !Ref Database
+  KinesisAnalyticsStudio:
+    Description: Kinesis Analytics Studio
+    Value: !Ref KinesisAnalyticsStudio
+  OpenSearchSecretsManagerReference:
+    Description: OpenSearch credentials are stored in secrets manager
+    Value: !Select [6, !Split [":", !Ref OpenSearchPassword ]]
