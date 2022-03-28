@@ -1,4 +1,4 @@
 # kinesisZeroToHero
 
 ## Maven repo 
-https://mvnrepository.com/artifact/org.apache.flink/flink-sql-connector-elasticsearch7****
+https://mvnrepository.com/artifact/org.apache.flink/flink-sql-connector-elasticsearch7
