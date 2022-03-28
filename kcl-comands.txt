@@ -1,0 +1,9 @@
+sudo yum install maven -y
+mvn clean compile assembly\:single
+
+
+export STREAM_NAME=input-stream
+export AWS_REGION=us-east-1
+export APPLICATION_NAME=ImmersiondayKCLConsumer
+
+java -jar target/kcl-app-1.0-SNAPSHOT-jar-with-dependencies.jar
